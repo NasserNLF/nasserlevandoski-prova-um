@@ -6,6 +6,7 @@ import com.example.nasser_levandoski_prova_1.dto.ReservaDto;
 import com.example.nasser_levandoski_prova_1.enums.StatusReservaEnum;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -18,7 +19,6 @@ import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -30,9 +30,13 @@ public class ReservaEntity {
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	private Long id;
 
-	@NonNull
+	@Column(nullable = false)
 	private LocalDate dataReserva;
+	
+	@Column(nullable = false)
 	private Integer numeroPessoas;
+	
+	@Column(nullable = false)
 	private Integer numeroMesa;
 
 	@Enumerated(EnumType.ORDINAL)
@@ -47,7 +51,7 @@ public class ReservaEntity {
 		this.dataReserva = reservaDto.getDataReserva();
 		this.numeroPessoas = reservaDto.getNumeroPessoas();
 		this.numeroMesa = reservaDto.getNumeroMesa();
-		this.statusReservaEnum = reservaDto.getStatusReservaEnum();
+		this.statusReservaEnum = (reservaDto.getStatusReservaEnum() == null) ? StatusReservaEnum.FEITA : reservaDto.getStatusReservaEnum();
 		this.cliente = clienteEntity;
 	}
 

@@ -1,8 +1,7 @@
 package com.example.nasser_levandoski_prova_1.controller;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,32 +20,46 @@ public class ReservaController {
 	@Autowired
 	ReservaService reservaService;
 
-	/*
-	 * 
-	 * 1 - POST RESERVA 2 - GET ALL RESERVA POR CLIENTE 3 - GET DISPONIBILIDADE DE
-	 * UMA MESA ESPECIFICA 4 - PUT STATUS RESERVA
-	 */
 
 	@PostMapping("cadastro-reserva")
-	public ReservaDto postReserva(@RequestBody ReservaDto reservaDto) {
-		return reservaService.postReserva(reservaDto);
+	public ResponseEntity<?> postReserva(@RequestBody ReservaDto reservaDto) {
+		try {
+			return ResponseEntity.ok(reservaService.postReserva(reservaDto));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+
 	}
 
 	// Voltar depois
 	@GetMapping("reservas-cliente/{id}")
-	public List<ReservaDto> getAllreservaCliente(@PathVariable Long id) {
-		return reservaService.getAllReservasCliente(id);
+	public ResponseEntity<?> getAllreservaCliente(@PathVariable Long id) {
+		try {
+			return ResponseEntity.ok(reservaService.getAllReservasCliente(id));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
 	}
 
 	@GetMapping("disponibilidade-mesa")
-	public Boolean getDisponibilidade(@RequestBody ReservaDto reservaDto) {
-		return reservaService.getDisponibilidadeMesa(reservaDto.getNumeroMesa(), reservaDto.getDataReserva());
+	public ResponseEntity<?> getDisponibilidade(@RequestBody ReservaDto reservaDto) {
+		try {
+			return ResponseEntity.ok(
+					reservaService.validaDisponibilidadeMesaBoolean(reservaDto.getNumeroMesa(), reservaDto.getDataReserva()));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+
 	}
 
-	//
 	@PutMapping("troca-status/{id}")
-	public ReservaDto putStatus(@PathVariable Long id, @RequestBody ReservaDto reservaDto) {
-		return reservaService.putStatusReserva(id, reservaDto);
+	public ResponseEntity<?> putStatus(@PathVariable Long id, @RequestBody ReservaDto reservaDto) {
+		try {
+			return ResponseEntity.ok(reservaService.putStatusReserva(id, reservaDto));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+
 	}
 
 }

@@ -1,9 +1,7 @@
 package com.example.nasser_levandoski_prova_1.controller;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -21,24 +19,22 @@ public class ClienteController {
 	@Autowired
 	ClienteService clienteService;
 
-	/*
-	 * 1 - POST cliente 2 - PUT cliente 3 - Listar todas as reservas de um cliente
-	 */
-
 	@PostMapping("cadastro-cliente")
-	public ClienteDto postCliente(@RequestBody ClienteDto clienteDto) {
-		return clienteService.postCliente(clienteDto);
+	public ResponseEntity<?> postCliente(@RequestBody ClienteDto clienteDto) {
+		try {
+			return ResponseEntity.ok(clienteService.postCliente(clienteDto));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
 	}
 
 	@PutMapping("cadastro-cliente/{id}")
-	public ClienteDto putCliente(@PathVariable Long id, @RequestBody ClienteDto clienteDto) {
-		return clienteService.putCliente(id, clienteDto);
-	}
-
-	// Feito apenas para testes
-	@GetMapping("clientes")
-	public List<ClienteDto> getAllClientes() {
-		return clienteService.getAllClientes();
+	public ResponseEntity<?> putCliente(@PathVariable Long id, @RequestBody ClienteDto clienteDto) {
+		try {
+			return ResponseEntity.ok(clienteService.putCliente(id, clienteDto));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
 	}
 
 }

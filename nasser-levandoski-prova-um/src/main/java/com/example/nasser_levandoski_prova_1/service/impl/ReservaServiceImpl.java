@@ -1,7 +1,6 @@
 package com.example.nasser_levandoski_prova_1.service.impl;
 
 import java.time.LocalDate;
-import java.util.Collections;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +8,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import com.example.nasser_levandoski_prova_1.dto.ReservaDto;
+import com.example.nasser_levandoski_prova_1.entity.ClienteEntity;
 import com.example.nasser_levandoski_prova_1.entity.ReservaEntity;
 import com.example.nasser_levandoski_prova_1.enums.StatusReservaEnum;
 import com.example.nasser_levandoski_prova_1.repository.ReservaRepository;
@@ -28,67 +28,105 @@ public class ReservaServiceImpl implements ReservaService {
 	@Override
 	public ReservaDto postReserva(ReservaDto reservaDto) {
 
-		var clienteEntity = clienteService.getCliente(reservaDto.getClienteId());
+		validaData(reservaDto.getDataReserva());
+		validaNumPessoas(reservaDto.getNumeroPessoas());
+		validaNumMesa(reservaDto.getNumeroMesa());
+		validaDisponibilidadeMesa(reservaDto.getNumeroMesa(), reservaDto.getDataReserva());
 
-		if (clienteEntity.isPresent() && reservaDto.getDataReserva().isAfter(LocalDate.now())
-				&& reservaDto.getNumeroPessoas() <= 10 && reservaDto.getNumeroPessoas() > 0
-				&& reservaDto.getNumeroMesa() > 0 && reservaDto.getNumeroMesa() <= 20
-				&& getDisponibilidadeMesa(reservaDto.getNumeroMesa(), reservaDto.getDataReserva())) {
+		var clienteEntity = buscaCliente(reservaDto.getClienteId());
 
-			var reservaEntityPersisitida = reservaRepository.save(new ReservaEntity(reservaDto, clienteEntity.get()));
+		var reservaEntityPersisitida = reservaRepository.save(new ReservaEntity(reservaDto, clienteEntity));
 
-			return new ReservaDto(reservaEntityPersisitida);
-		}
+		return new ReservaDto(reservaEntityPersisitida);
 
-		return null;
-	}
-
-	@Override
-	public Boolean getDisponibilidadeMesa(Integer numeroMesa, LocalDate dataReserva) {
-
-		List<ReservaEntity> reservas = reservaRepository.findAllByDataReserva(dataReserva);
-
-		if (reservas.stream().filter(r -> r.getNumeroMesa().equals(numeroMesa)).toList().isEmpty()) {
-			return true;
-		}
-
-		return false;
 	}
 
 	@Override
 	public ReservaDto putStatusReserva(Long idReserva, ReservaDto reservaDto) {
 
-		var reservaEntityOptional = reservaRepository.findById(idReserva);
+		var reservaEntity = validaReserva(idReserva);
 
-		if (reservaEntityOptional.isPresent()) {
+		validaStatusReserva(reservaDto.getStatusReservaEnum(), reservaEntity.getDataReserva());
 
-			if (reservaDto.getStatusReservaEnum().equals(StatusReservaEnum.CANCELADA)) {
-				if (!reservaEntityOptional.get().getDataReserva().isBefore(LocalDate.now())) {
-					return null;
-				}
-			}
+		reservaEntity.putStatus(reservaDto);
 
-			var reservaEntity = reservaEntityOptional.get();
-
-			reservaEntity.putStatus(reservaDto);
-
-			reservaRepository.save(reservaEntity);
-
-			return new ReservaDto(reservaEntity);
-		}
-		return null;
+		return new ReservaDto(reservaRepository.save(reservaEntity));
 	}
 
 	@Override
 	public List<ReservaDto> getAllReservasCliente(Long id) {
-		var clienteEntity = clienteService.getCliente(id);
+		return buscaCliente(id).getReservas().stream().map(ReservaDto::new).toList();
+	}
 
-		if (clienteEntity.isPresent()) {
+	@Override
+	public Boolean validaDisponibilidadeMesaBoolean(Integer numMesa, LocalDate dataReserva) {
+		return !reservaRepository.existsByNumeroMesaAndDataReserva(numMesa, dataReserva);
+	}
 
-			return clienteEntity.get().getReservas().stream().map(ReservaDto::new).toList();
+	/*
+	 * Validações
+	 */
+
+	public void validaData(LocalDate data) {
+		if (data.isBefore(LocalDate.now())) {
+			throw new IllegalArgumentException("A data da reserva não pode ser feita para o passado");
+		}
+	}
+
+	public void validaNumMesa(Integer numMesa) {
+		if (numMesa < 1 || numMesa > 20) {
+			throw new IllegalArgumentException("Os números de mesa vão de 1 a 20");
+		}
+	}
+
+	public void validaNumPessoas(Integer qtdPessoas) {
+
+		if (qtdPessoas < 1) {
+			throw new IllegalArgumentException("A quantidade de pessoas não pode ser negativa");
 		}
 
-		return Collections.emptyList();
+		if (qtdPessoas > 10) {
+			throw new IllegalArgumentException("A quantidade máxima de pessoas em uma reserva é 10");
+		}
+
 	}
+
+	public ClienteEntity buscaCliente(Long clienteId) {
+		return clienteService.getCliente(clienteId);
+	}
+
+	public ReservaEntity validaReserva(Long idReserva) {
+
+		var reservaEntity = reservaRepository.findById(idReserva);
+
+		if (reservaEntity.isEmpty()) {
+			throw new IllegalArgumentException("Essa reserva não existe!");
+		}
+
+		return reservaEntity.get();
+
+	}
+
+	public void validaStatusReserva(StatusReservaEnum status, LocalDate dataReserva) {
+		if (status.equals(StatusReservaEnum.CANCELADA)) {
+			if (dataReserva.equals(LocalDate.now()) || dataReserva.isBefore(LocalDate.now())) {
+				throw new IllegalArgumentException("A reserva só pode ser cancelada com 1 dia de antecedência");
+			}
+		}
+		
+		if (status.equals(StatusReservaEnum.CONCLUIDA)) {
+			if (dataReserva.isAfter(LocalDate.now())) {
+				throw new IllegalArgumentException(
+						"A data da reserva não pode ser concluída, pois ela ainda não ocorreu");
+			}
+		}
+
+	}
+
+	public void validaDisponibilidadeMesa(Integer numMesa, LocalDate dataReserva) {
+		if (!validaDisponibilidadeMesaBoolean(numMesa, dataReserva)) {
+			throw new IllegalArgumentException("Já há uma reserva nessa data para essa mesa");
+		}
+	};
 
 }

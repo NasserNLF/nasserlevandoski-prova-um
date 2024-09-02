@@ -1,8 +1,5 @@
 package com.example.nasser_levandoski_prova_1.service.impl;
 
-import java.util.List;
-import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
@@ -19,50 +16,39 @@ public class ClienteServiceImpl implements ClienteService {
 	@Autowired
 	ClienteRepository clienteRepository;
 
-	// 1 - POST Cliente
+	// Cadastro Cliente
 	@Override
 	public ClienteDto postCliente(ClienteDto clienteDto) {
 
 		var clienteEntity = new ClienteEntity(clienteDto);
 
-		clienteRepository.save(clienteEntity);
-
-		return new ClienteDto(clienteEntity);
+		return new ClienteDto(clienteRepository.save(clienteEntity));
 	}
 
-	// 2 - PUT Cliente
+	// Alterando status Cliente
 	@Override
 	public ClienteDto putCliente(Long id, ClienteDto clienteDto) {
 
-		var clienteEntityOptional = clienteRepository.findById(id);
+		var clienteEntity = getCliente(id);
 
-		if (clienteEntityOptional.isPresent()) {
-			var clienteEntity = clienteEntityOptional.get();
+		clienteEntity.putRegistro(clienteDto);
 
-			clienteEntity.putRegistro(clienteDto);
+		return new ClienteDto(clienteRepository.save(clienteEntity));
 
-			clienteRepository.save(clienteEntity);
+	}
 
-			return new ClienteDto(clienteEntity);
+	// Buscando cliente no banco
+	@Override
+	public ClienteEntity getCliente(Long id) {
+
+		var clienteEntity = clienteRepository.findById(id);
+
+		if (clienteEntity.isEmpty()) {
+			throw new IllegalArgumentException("Cliente inexistente!");
 		}
 
-		return null;
-	}
-	
-	// 3 - GET Cliente
-	@Override
-	public Optional<ClienteEntity> getCliente(Long id){
-		return clienteRepository.findById(id);
+		return clienteEntity.get();
 	}
 
-	//Apenas para testes
-	@Override
-	public List<ClienteDto> getAllClientes() {
-		return clienteRepository.findAll().stream().map(ClienteDto::new).toList();
-	}
-
-
-	
-	
 
 }
